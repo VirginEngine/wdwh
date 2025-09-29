@@ -1,0 +1,49 @@
+{
+  "name": "@virgin-engine/wdwh",
+  "author": "VirginEngine",
+  "version": "0.1.22",
+  "repository": "https://github.com/VirginEngine/wdwh.git",
+  "description": "Easyer web dev without html and reduced css",
+  "keywords": [
+    "@virgin-engine/wdwh",
+    "virgin-engine",
+    "VirginEngine",
+    "wdwh",
+    "web",
+    "html",
+    "css",
+    "js",
+    "ts"
+  ],
+  "files": [
+    "LICENSE",
+    "README.md",
+    "dist",
+    "types.d.ts"
+  ],
+  "scripts": {
+    "dev": "clear && bun test.ts",
+    "build": "bun build.ts",
+    "deploy": "bun publish.ts"
+  },
+  "bin": {
+    "wdwh": "./dist/main.ts"
+  },
+  "dependencies": {
+    "bun-plugin-tailwind": "^0.0.15"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5.9.2"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "license": "MIT",
+  "prettier": {
+    "semi": false,
+    "printWidth": 108
+  }
+}

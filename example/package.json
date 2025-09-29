@@ -1,0 +1,15 @@
+{
+  "name": "example",
+  "private": true,
+  "scripts": {
+    "init": "wdwh init",
+    "dev": "wdwh dev",
+    "build": "wdwh build"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  }
+}
