@@ -1,22 +1,12 @@
-# @virginengine/wdwh (wev dev without html (and css))
+# Example
 
-## Init project (not working)
+To install dependencies:
 
-```sh
-wdwh init
-bun run init
+```bash
+bun i
 ```
 
-## Development (not working)
+# TODO
 
-```sh
-wdwh dev
-bun dev
-```
-
-## Build project (not working)
-
-```sh
-wdwh build
-bun run build
-```
+1. compile files to html and css
+2. run server/build

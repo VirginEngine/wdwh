@@ -1,8 +1,11 @@
 #!/usr/bin/env bun
 import plugin from "bun-plugin-tailwind"
-import { existsSync } from "fs"
-import { rm } from "fs/promises"
+import { rmSync } from "fs"
 import { relative } from "path"
+
+const libPath = `/node_modules/@virgin-engine/wdwh`
+const appPath = `/src/app`
+const basePath = process.env.BASE_PATH || `.`
 
 switch (process.argv.at(2)) {
   case `init`:
@@ -16,12 +19,12 @@ switch (process.argv.at(2)) {
     break
 }
 
-export async function init(path = `./node_modules/@virgin-engine/wdwh/dist/example`) {
+export async function init() {
   console.log(`INIT!`)
+  const path = `.${basePath}${libPath}/dist/example`
 
-  const glob = new Bun.Glob(`**/*`)
+  const glob = new Bun.Glob(`${path}/*`)
   for (const filePath of glob.scanSync(path)) {
-    console.log(filePath)
     const text = await Bun.file(`${path}/${filePath}`).text()
     Bun.write(filePath, text)
   }
@@ -29,19 +32,35 @@ export async function init(path = `./node_modules/@virgin-engine/wdwh/dist/examp
 
 export async function dev() {
   console.log(`DEV!`)
+
+  await createJs()
+  await createCss()
+  await createHtml()
+
+  // return
+  const index = await import(`./serve.ts`)
 }
 
-export async function build(f?: () => any) {
-  const mod = import(process.cwd() + `/src/app/index.tsx`)
+const buildDef = {
+  outdir: `./dist`,
+  bundleCss: true,
+}
+
+const metadata = await readMetadata()
+
+export async function build(config = buildDef) {
+  console.log(`BUILD!`)
+
+  await createJs()
+  await createCss()
+  await createHtml()
+
+  const mod = import(`${process.cwd()}${appPath}/index.tsx`)
   console.log(mod)
 
-  if (f) await f()
-
-  const outdir = `./dist`
-
-  const config: Bun.BuildConfig = {
-    entrypoints: [`./src/app/index.html`],
-    outdir,
+  const buildConfig: Bun.BuildConfig = {
+    entrypoints: [`.${appPath}/index.html`],
+    outdir: config.outdir,
     plugins: [plugin],
     minify: true,
     target: `browser`,
@@ -51,46 +70,45 @@ export async function build(f?: () => any) {
     },
   }
 
-  console.log(`Starting build process...`)
+  console.log(`Building...`)
 
-  if (existsSync(outdir)) {
-    console.log(`Cleaning previous build...`)
-    await rm(outdir, { recursive: true, force: true })
-  }
+  rmSync(config.outdir, { recursive: true, force: true })
 
   const start = performance.now()
 
   // Build all the HTML files
-  const result = await Bun.build(config)
+  const result = await Bun.build(buildConfig)
 
   // Minify html code
-  const htmlFile = Bun.file(`${outdir}/index.html`)
+  const htmlFile = Bun.file(`${config.outdir}/index.html`)
   let html = minifyHtml(await htmlFile.text())
 
   // Bundle css into html
-  const cssArtefact = result.outputs.find((e) => e.path.endsWith(`.css`))
-  if (cssArtefact?.path) {
-    const cssFile = Bun.file(cssArtefact.path)
+  if (config.bundleCss) {
+    const cssArtefact = result.outputs.find((e) => e.path.endsWith(`.css`))
+    if (cssArtefact?.path) {
+      const cssFile = Bun.file(cssArtefact.path)
 
-    const cssStart = html.indexOf(`<link rel="stylesheet"`)
+      const cssStart = html.indexOf(`<link rel="stylesheet"`)
 
-    let cssEnd = cssStart
-    for (; cssEnd < html.length; cssEnd++) {
-      if ([`/>`, `">`].includes(html.slice(cssEnd, cssEnd + 2))) {
-        cssEnd += 2
-        break
+      let cssEnd = cssStart
+      for (; cssEnd < html.length; cssEnd++) {
+        if ([`/>`, `">`].includes(html.slice(cssEnd, cssEnd + 2))) {
+          cssEnd += 2
+          break
+        }
       }
+
+      const slice = html.slice(cssStart, cssEnd)
+      const cssCode = `<style>${minifyHtml(await cssFile.text())}</style>`
+
+      html = html.replace(slice, cssCode)
+      cssFile.delete()
+      result.outputs.splice(result.outputs.indexOf(cssArtefact), 1)
     }
 
-    const slice = html.slice(cssStart, cssEnd)
-    const cssCode = `<style>${minifyHtml(await cssFile.text())}</style>`
-
-    html = html.replace(slice, cssCode)
-    cssFile.delete()
-    result.outputs.splice(result.outputs.indexOf(cssArtefact), 1)
+    htmlFile.write(html)
   }
-
-  htmlFile.write(html)
 
   // Print the results
   const buildTime = (performance.now() - start).toFixed(2)
@@ -142,6 +160,116 @@ Done in ${buildTime}ms\n`)
 
     return path
   }
+}
 
-  console.log(`BUILD!`)
+async function createJs() {
+  const jsText = `import { createRoot } from "react-dom/client"
+import "./index.css"
+import App from ".${basePath}${appPath}/App.tsx"
+
+createRoot(document.getElementsByTagName("body")[0]).render(<App />)`
+
+  await Bun.write(`.${basePath}${libPath}/.cache/frontend.tsx`, jsText)
+}
+
+async function createCss() {
+  const cssFile = Bun.file(`.${basePath}${appPath}/index.css`)
+  let cssText = `@import "tailwindcss";\n`
+  if (await cssFile.exists()) cssText += await cssFile.text()
+
+  await Bun.write(`.${basePath}${libPath}/.cache/index.css`, cssText)
+}
+
+async function createHtml() {
+  const htmlFile = Bun.file(`.${basePath}${appPath}/index.tsx`)
+
+  const json = getPropsFromIndexTSX(await htmlFile.text(), `.${basePath}${appPath}`)
+
+  // write html
+  const { title, iconPath, ...rest } = metadata
+
+  const buf = [`<!DOCTYPE html>`]
+  buf.push(`<html lang="en">`)
+
+  buf.push(
+    `<head>`,
+    `<meta charset="UTF-8" />`,
+    `<meta name="viewport" content="width=device-width, initial-scale=1.0" />`
+  )
+
+  buf.push(json.headContent)
+
+  for (const key in rest) {
+    buf.push(`<meta name="${key}" content="${rest[key]}" />`)
+  }
+
+  buf.push(`<link rel="icon" href="${iconPath}" />`)
+  buf.push(`<title>${title}</title>`)
+
+  buf.push(`<script src="./frontend.tsx"></script>`)
+
+  buf.push(`</head>`)
+
+  buf.push(json.body)
+
+  buf.push(`</html>`)
+
+  await Bun.write(`.${basePath}${libPath}/.cache/index.html`, buf.join(`\n`))
+}
+
+function getPropsFromIndexTSX(text: string, path: string) {
+  const headContent = getHtmlElement(text, `head`).slice(6, -7)
+  let body = getHtmlElement(text, `body`).replaceAll(`className`, `class`)
+
+  const bodyStart = body.indexOf(`>`) + 1
+  const bodyEnd = body.lastIndexOf(`<`)
+  body = body.replace(body.slice(bodyStart, bodyEnd), ``)
+
+  let importPath = text.split(`\n`).at(0)!
+
+  const importStart = importPath.indexOf(`"`) + 2
+  const importEnd = importPath.lastIndexOf(`"`)
+  importPath = importPath.slice(importStart, importEnd)
+
+  return {
+    importPath: `${path}${importPath}`,
+    headContent,
+    body,
+  }
+}
+
+function getHtmlElement(text: string, name: string) {
+  for (let sliceStart, sliceEnd = text.indexOf(`export default`); ; sliceEnd++) {
+    if (!sliceStart && text.startsWith(`<${name}`, sliceEnd)) sliceStart = sliceEnd
+    if (sliceStart && text.startsWith(`</${name}>`, sliceEnd)) {
+      return text
+        .slice(sliceStart, sliceEnd + name.length + 3)
+        .replaceAll(`\n`, ` `)
+        .replaceAll(/\s{2,}/g, ` `)
+        .trim()
+    }
+  }
+}
+
+async function readMetadata() {
+  const text = await Bun.file(`.${basePath}${appPath}/index.tsx`).text()
+
+  let i = text.indexOf(`export const metadata`)
+  i = text.indexOf(`{`, i) + 1
+  const j = text.indexOf(`}`, i)
+
+  const obj = text
+    .slice(i, j)
+    .replaceAll(/`|'/g, `"`)
+    .split(`,`)
+    .map((line) => line.trim())
+    .filter((line) => line)
+    .reduce((prev, line) => {
+      const [a, b] = line.split(`:`) as [string, string]
+      return { ...prev, [a]: b.slice(2, -1) }
+    }, {} as Record<string, string>)
+
+  if (obj.iconPath) obj.iconPath = `.${basePath}${appPath}${obj.iconPath.slice(1)}`
+
+  return obj
 }

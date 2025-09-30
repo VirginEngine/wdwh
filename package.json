@@ -19,10 +19,12 @@
     "LICENSE",
     "README.md",
     "dist",
-    "types.d.ts"
+    "types.d.ts",
+    "index.ts",
+    "bunfig.toml"
   ],
   "scripts": {
-    "dev": "clear && bun test.ts",
+    "dev": "clear && BASE_PATH=/test bun test.ts",
     "build": "bun build.ts",
     "deploy": "bun publish.ts"
   },

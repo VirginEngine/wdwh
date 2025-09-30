@@ -6,6 +6,13 @@
     "dev": "wdwh dev",
     "build": "wdwh build"
   },
+  "dependencies": {
+    "@virgin-engine/wdwh": "0.1.22",
+    "bun-plugin-tailwind": "^0.0.14",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "tailwindcss": "^4.1.13"
+  },
   "devDependencies": {
     "@types/bun": "latest"
   },
