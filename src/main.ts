@@ -3,9 +3,16 @@ import plugin from "bun-plugin-tailwind"
 import { rmSync } from "fs"
 import { relative } from "path"
 
-const libPath = `/node_modules/@virgin-engine/wdwh`
-const appPath = `/src/app`
+const libPath = `${process.env.BASE_PATH || `.`}/node_modules/@virgin-engine/wdwh`
+const appPath = `${process.env.BASE_PATH || `.`}/src/app`
 const basePath = process.env.BASE_PATH || `.`
+
+const metadata: Record<string, string> = {}
+
+const buildDef = {
+  outdir: `./dist`,
+  bundleCss: true,
+}
 
 switch (process.argv.at(2)) {
   case `init`:
@@ -17,39 +24,42 @@ switch (process.argv.at(2)) {
   case `build`:
     await build()
     break
-}
-
-export async function init() {
-  console.log(`INIT!`)
-  const path = `.${basePath}${libPath}/dist/example`
-
-  const glob = new Bun.Glob(`${path}/*`)
-  for (const filePath of glob.scanSync(path)) {
-    const text = await Bun.file(`${path}/${filePath}`).text()
-    Bun.write(filePath, text)
+  default: {
+    console.log(`wrong command: "${process.argv.at(2)}"\ntry "init" | "dev" | "build"`)
+    process.exit()
   }
 }
 
+export async function init() {
+  console.log(`Init blanc project...`)
+  const path = `${libPath}/dist/example`
+
+  const glob = new Bun.Glob(`**/*`)
+  for (const filePath of glob.scanSync(path)) {
+    const text = await Bun.file(`${path}/${filePath}`).text()
+    await Bun.write(`${basePath}/${filePath}`, text)
+  }
+
+  await Bun.write(
+    `${basePath}/bunfig.toml`,
+    `
+[serve.static]
+plugins = ["bun-plugin-tailwind"]
+env = "BUN_PUBLIC_*"`
+  )
+}
+
 export async function dev() {
-  console.log(`DEV!`)
+  await readMetadata()
 
   await createJs()
   await createCss()
   await createHtml()
 
-  // return
-  const index = await import(`./serve.ts`)
+  await import(`./serve.ts`)
 }
-
-const buildDef = {
-  outdir: `./dist`,
-  bundleCss: true,
-}
-
-const metadata = await readMetadata()
-
 export async function build(config = buildDef) {
-  console.log(`BUILD!`)
+  await readMetadata()
 
   await createJs()
   await createCss()
@@ -165,25 +175,25 @@ Done in ${buildTime}ms\n`)
 async function createJs() {
   const jsText = `import { createRoot } from "react-dom/client"
 import "./index.css"
-import App from ".${basePath}${appPath}/App.tsx"
+import App from "../../../.${appPath}/App.tsx"
 
 createRoot(document.getElementsByTagName("body")[0]).render(<App />)`
 
-  await Bun.write(`.${basePath}${libPath}/.cache/frontend.tsx`, jsText)
+  await Bun.write(`${libPath}/dist/frontend.tsx`, jsText)
 }
 
 async function createCss() {
-  const cssFile = Bun.file(`.${basePath}${appPath}/index.css`)
+  const cssFile = Bun.file(`${appPath}/index.css`)
   let cssText = `@import "tailwindcss";\n`
   if (await cssFile.exists()) cssText += await cssFile.text()
 
-  await Bun.write(`.${basePath}${libPath}/.cache/index.css`, cssText)
+  await Bun.write(`${libPath}/dist/index.css`, cssText)
 }
 
 async function createHtml() {
-  const htmlFile = Bun.file(`.${basePath}${appPath}/index.tsx`)
+  const htmlFile = Bun.file(`${appPath}/index.tsx`)
 
-  const json = getPropsFromIndexTSX(await htmlFile.text(), `.${basePath}${appPath}`)
+  const json = getPropsFromIndexTSX(await htmlFile.text(), `${appPath}`)
 
   // write html
   const { title, iconPath, ...rest } = metadata
@@ -214,7 +224,7 @@ async function createHtml() {
 
   buf.push(`</html>`)
 
-  await Bun.write(`.${basePath}${libPath}/.cache/index.html`, buf.join(`\n`))
+  await Bun.write(`${libPath}/dist/index.html`, buf.join(`\n`))
 }
 
 function getPropsFromIndexTSX(text: string, path: string) {
@@ -252,7 +262,7 @@ function getHtmlElement(text: string, name: string) {
 }
 
 async function readMetadata() {
-  const text = await Bun.file(`.${basePath}${appPath}/index.tsx`).text()
+  const text = await Bun.file(`${appPath}/index.tsx`).text()
 
   let i = text.indexOf(`export const metadata`)
   i = text.indexOf(`{`, i) + 1
@@ -269,7 +279,9 @@ async function readMetadata() {
       return { ...prev, [a]: b.slice(2, -1) }
     }, {} as Record<string, string>)
 
-  if (obj.iconPath) obj.iconPath = `.${basePath}${appPath}${obj.iconPath.slice(1)}`
+  if (obj.iconPath) obj.iconPath = `../../../.${appPath}${obj.iconPath.slice(1)}`
 
-  return obj
+  for (const key in obj) {
+    metadata[key] = obj[key]!
+  }
 }
