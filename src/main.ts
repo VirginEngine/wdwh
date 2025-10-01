@@ -1,11 +1,10 @@
 #!/usr/bin/env bun
 import plugin from "bun-plugin-tailwind"
-import { rmSync } from "fs"
+import { cpSync, rmSync } from "fs"
 import { relative } from "path"
 
 const libPath = `${process.env.BASE_PATH || `.`}/node_modules/@virgin-engine/wdwh`
 const appPath = `${process.env.BASE_PATH || `.`}/src/app`
-const basePath = process.env.BASE_PATH || `.`
 
 const config: Config = {
   outdir: `./dist`,
@@ -23,6 +22,15 @@ import "../../../.${appPath}/index.css"
 import App from "../../../.${appPath}/App.tsx"
 
 createRoot(document.getElementsByTagName("body")[0]).render(<App />)`,
+  [`${libPath}/dist/server.ts`]: `import index from "./index.html"
+
+const server = Bun.serve({
+  routes: { "/*": index },
+  development: { hmr: true },
+})
+
+console.log(\`> Server running at \${server.url}\`)
+`,
 }
 
 switch (process.argv.at(2)) {
@@ -43,21 +51,13 @@ switch (process.argv.at(2)) {
 
 export async function init() {
   console.log(`Init blank project...`)
-  const path = `${libPath}/dist/example`
 
-  const glob = new Bun.Glob(`**/*`)
-  for (const filePath of glob.scanSync(path)) {
-    const text = await Bun.file(`${path}/${filePath}`).text()
-    await Bun.write(`${basePath}/${filePath}`, text)
+  const example: Record<string, string> = {}
+  for (const [path, text] of Object.entries(example)) {
+    await Bun.write(path, text)
   }
 
-  await Bun.write(
-    `${basePath}/bunfig.toml`,
-    `
-[serve.static]
-plugins = ["bun-plugin-tailwind"]
-env = "BUN_PUBLIC_*"`
-  )
+  cpSync(`${libPath}/dist/react.svg`, `${appPath}/react.svg`)
 
   const indexFile = Bun.file(`./index.ts`)
   if (await indexFile.exists()) await indexFile.delete()

@@ -1,7 +1,7 @@
 {
   "name": "@virgin-engine/wdwh",
   "author": "VirginEngine",
-  "version": "1.0.10",
+  "version": "1.3.0-dev.-1",
   "repository": "https://github.com/VirginEngine/wdwh.git",
   "description": "Easyer web dev without html and reduced css",
   "keywords": [
@@ -19,8 +19,7 @@
     "LICENSE",
     "README.md",
     "dist",
-    "types.d.ts",
-    "bunfig.toml"
+    "types.d.ts"
   ],
   "scripts": {
     "dev": "clear && BASE_PATH=./test bun test.ts",
