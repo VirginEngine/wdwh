@@ -7,11 +7,22 @@ const libPath = `${process.env.BASE_PATH || `.`}/node_modules/@virgin-engine/wdw
 const appPath = `${process.env.BASE_PATH || `.`}/src/app`
 const basePath = process.env.BASE_PATH || `.`
 
-const metadata: Record<string, string> = {}
-
-const buildDef = {
+const config: Config = {
   outdir: `./dist`,
   bundleCss: true,
+}
+
+const metadata: Metadata = {
+  iconPath: `./react.svg`,
+  title: `Example`,
+}
+
+const files: Record<string, string> = {
+  [`${libPath}/dist/frontend.tsx`]: `import { createRoot } from "react-dom/client"
+import "../../../.${appPath}/index.css"
+import App from "../../../.${appPath}/App.tsx"
+
+createRoot(document.getElementsByTagName("body")[0]).render(<App />)`,
 }
 
 switch (process.argv.at(2)) {
@@ -31,7 +42,7 @@ switch (process.argv.at(2)) {
 }
 
 export async function init() {
-  console.log(`Init blanc project...`)
+  console.log(`Init blank project...`)
   const path = `${libPath}/dist/example`
 
   const glob = new Bun.Glob(`**/*`)
@@ -48,25 +59,22 @@ plugins = ["bun-plugin-tailwind"]
 env = "BUN_PUBLIC_*"`
   )
 
-  await Bun.file(`./index.ts`).delete()
+  const indexFile = Bun.file(`./index.ts`)
+  if (await indexFile.exists()) await indexFile.delete()
 }
 
 export async function dev() {
   await readMetadata()
 
-  await createJs()
-  await createCss()
-  await createHtml()
+  await createFiles()
 
   await import(`./server.ts`)
 }
 
-export async function build(config = buildDef) {
+export async function build() {
   await readMetadata()
 
-  await createJs()
-  await createCss()
-  await createHtml()
+  await createFiles()
 
   const buildConfig: Bun.BuildConfig = {
     entrypoints: [`${libPath}/dist/index.html`],
@@ -172,25 +180,11 @@ Done in ${buildTime}ms\n`)
   }
 }
 
-async function createJs() {
-  const jsText = `import { createRoot } from "react-dom/client"
-import "./index.css"
-import App from "../../../.${appPath}/App.tsx"
+async function createFiles() {
+  for (const path in files) {
+    await Bun.write(path, files[path] as any)
+  }
 
-createRoot(document.getElementsByTagName("body")[0]).render(<App />)`
-
-  await Bun.write(`${libPath}/dist/frontend.tsx`, jsText)
-}
-
-async function createCss() {
-  const cssFile = Bun.file(`${appPath}/index.css`)
-  let cssText = `@import "tailwindcss";\n`
-  if (await cssFile.exists()) cssText += await cssFile.text()
-
-  await Bun.write(`${libPath}/dist/index.css`, cssText)
-}
-
-async function createHtml() {
   const htmlFile = Bun.file(`${appPath}/index.tsx`)
 
   const json = getPropsFromIndexTSX(await htmlFile.text(), `${appPath}`)
@@ -198,31 +192,21 @@ async function createHtml() {
   // write html
   const { title, iconPath, ...rest } = metadata
 
-  const buf = [`<!DOCTYPE html>`]
-  buf.push(`<html lang="en">`)
-
-  buf.push(
+  const buf = [
+    `<!DOCTYPE html>`,
+    `<html lang="en">`,
     `<head>`,
     `<meta charset="UTF-8" />`,
-    `<meta name="viewport" content="width=device-width, initial-scale=1.0" />`
-  )
-
-  buf.push(json.headContent)
-
-  for (const key in rest) {
-    buf.push(`<meta name="${key}" content="${rest[key]}" />`)
-  }
-
-  buf.push(`<link rel="icon" href="${iconPath}" />`)
-  buf.push(`<title>${title}</title>`)
-
-  buf.push(`<script src="./frontend.tsx"></script>`)
-
-  buf.push(`</head>`)
-
-  buf.push(json.body)
-
-  buf.push(`</html>`)
+    `<meta name="viewport" content="width=device-width, initial-scale=1.0" />`,
+    json.headContent,
+    Object.keys(rest).map((key) => `<meta name="${key}" content="${rest[key]}" />`),
+    `<link rel="icon" href="${iconPath}" />`,
+    `<title>${title}</title>`,
+    `<script src="./frontend.tsx"></script>`,
+    `</head>`,
+    json.body,
+    `</html>`,
+  ]
 
   await Bun.write(`${libPath}/dist/index.html`, buf.join(`\n`))
 }
@@ -262,12 +246,70 @@ function getHtmlElement(text: string, name: string) {
 }
 
 async function readMetadata() {
-  const mod = await import(`../../../.${appPath}/index.tsx`)
-  const obj = mod.metadata
+  // // Metadata
+  // const mod = await import(`../../../.${appPath}/index.tsx`)
+  // let obj = mod.metadata
 
-  if (obj.iconPath) obj.iconPath = `../../../.${appPath}${obj.iconPath.slice(1)}`
+  // for (const key in obj) {
+  //   metadata[key] = obj[key]!
+  // }
 
-  for (const key in obj) {
-    metadata[key] = obj[key]!
-  }
+  // // Config
+
+  // obj = mod.config
+
+  // for (const key in obj) {
+  //   ;(config as any)[key] = obj[key]!
+  // }
+
+  const text = await Bun.file(`${appPath}/index.tsx`).text()
+
+  const conf = getOBjFromJsString(text, `export const config`) as Config
+
+  const meta = getOBjFromJsString(text, `export const metadata`)
+  if (meta.iconPath) meta.iconPath = `../../../.${appPath}${meta.iconPath.slice(1)}`
+
+  Object.assign(config, conf)
+  Object.assign(metadata, meta)
+}
+
+function getOBjFromJsString(text: string, id: string) {
+  let i = text.indexOf(id)
+  i = text.indexOf(`{`, i) + 1
+  const j = text.indexOf(`}`, i)
+
+  return text
+    .slice(i, j)
+    .replaceAll(/`|'/g, `"`)
+    .split(`,`)
+    .map((line) => line.trim())
+    .filter((line) => line)
+    .reduce((prev, line) => {
+      let [a, b] = line.split(`:`) as [string, any]
+      b = b.trim()
+
+      if (b.at(0) === `"`) b = b.slice(1, -1)
+      else if (!Number.isNaN(Number(b))) b = Number(b)
+      else if (b === `false`) b = false
+      else if (b === `true`) b = true
+
+      return { ...prev, [a]: b }
+    }, {} as Record<string, any>)
+}
+
+// Types
+
+type Config = {
+  outdir: string
+  bundleCss: boolean
+}
+
+type Metadata = {
+  iconPath: string
+  title: string
+  description?: string
+  author?: string
+  keywords?: string
+  themeColor?: string
+  [name: string]: string | undefined
 }

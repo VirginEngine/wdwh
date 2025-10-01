@@ -64,7 +64,7 @@ https://github.com/VirginEngine/wdwh/tree/main/example
 `src/app/index.tsx` (contains only `html` (tag) `head` (tag) `metadata` `body` (tag))
 `src/app/App.tsx` (app entry point)
 `src/app/react.svg` (favicon, can be any other image, bun path must be specify in `src/app/index.tsx`)
-`src/app/index.css` (optional, taiwindcss import automaticly)
+`src/app/index.css` (must import taiwindcss)
 `.gitignore` (optional)
 `bunfig.toml` (for tailwindcss)
 `package.json` (with scripts `dev` `build`)
@@ -73,4 +73,4 @@ https://github.com/VirginEngine/wdwh/tree/main/example
 
 ## TODO
 
-tailwind vscode support
+- Bundle example folder to json { path: fileText }

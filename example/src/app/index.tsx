@@ -1,29 +1,39 @@
 import App from "./App.tsx"
 
-type Metadata = {
-  title?: string | undefined
-  description?: string | undefined
-  author?: string | undefined
-  keywords?: string | undefined
-  themeColor?: string | undefined
-  iconPath?: string
-  [name: string]: string | undefined
+export const config: Config = {
+  outdir: `./dist`,
+  bundleCss: true,
 }
 
 export const metadata: Metadata = {
-  title: ``,
   iconPath: `./react.svg`,
+  title: `Example`,
 }
 
 export default function Page() {
   return (
     <html>
-      <head>
-        <meta name="" content="" />
-      </head>
+      <head></head>
       <body className="bg-black text-white">
         <App />
       </body>
     </html>
   )
+}
+
+// Types
+
+type Config = {
+  outdir: string
+  bundleCss: boolean
+}
+
+type Metadata = {
+  iconPath: string
+  title: string
+  description?: string
+  author?: string
+  keywords?: string
+  themeColor?: string
+  [name: string]: string | undefined
 }

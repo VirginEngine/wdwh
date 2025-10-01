@@ -1,7 +1,7 @@
 {
   "name": "@virgin-engine/wdwh",
   "author": "VirginEngine",
-  "version": "1.0.3-dev.0",
+  "version": "1.0.10",
   "repository": "https://github.com/VirginEngine/wdwh.git",
   "description": "Easyer web dev without html and reduced css",
   "keywords": [
