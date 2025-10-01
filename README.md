@@ -1,5 +1,7 @@
 # WDWH (Easyer web dev without html and reduced css)
 
+Works only with Bun runtime
+
 ## Init new project
 
 1. Init blank bun
@@ -68,3 +70,7 @@ https://github.com/VirginEngine/wdwh/tree/main/example
 `package.json` (with scripts `dev` `build`)
 `README.md` (optional)
 `tsconfig.json` (for `typescript`)
+
+## TODO
+
+tailwind vscode support

@@ -26,7 +26,7 @@ switch (process.argv.at(2)) {
     break
   default: {
     console.log(`wrong command: "${process.argv.at(2)}"\ntry "init" | "dev" | "build"`)
-    // process.exit()
+    process.exit()
   }
 }
 
@@ -47,6 +47,8 @@ export async function init() {
 plugins = ["bun-plugin-tailwind"]
 env = "BUN_PUBLIC_*"`
   )
+
+  await Bun.file(`./index.ts`).delete()
 }
 
 export async function dev() {

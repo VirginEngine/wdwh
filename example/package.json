@@ -8,9 +8,11 @@
     "@virgin-engine/wdwh": "latest"
   },
   "devDependencies": {
+    "@types/react": "latest",
+    "@types/react-dom": "latest",
     "@types/bun": "latest"
   },
   "peerDependencies": {
-    "typescript": "^5"
+    "typescript": "latest"
   }
 }
