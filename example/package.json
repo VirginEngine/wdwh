@@ -1,7 +1,6 @@
 {
   "private": true,
   "scripts": {
-    "init": "wdwh init",
     "dev": "wdwh dev",
     "build": "wdwh build"
   },

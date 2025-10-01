@@ -1,6 +1,6 @@
 # WDWH (Easyer web dev without html and reduced css)
 
-## Install
+## Init new project
 
 1. Init blank bun
 
@@ -32,12 +32,39 @@ bun i @virgin-engine/wdwh
 bun run init
 ```
 
-5. Install deps
+## Adding to project
+
+1. Install `@virgin-engine/wdwh`
 
 ```sh
-bun i
+bun i @virgin-engine/wdwh
 ```
 
-## TODO
+2. Add script `dev` `build` to `package.json`
 
-build
+```json
+{
+  "private": true,
+  "scripts": {
+    "dev": "wdwh dev",
+    "build": "wdwh build"
+  }
+  // ...
+}
+```
+
+3. Add files
+
+create file structure like example
+
+https://github.com/VirginEngine/wdwh/tree/main/example
+
+`src/app/index.tsx` (contains only `html` (tag) `head` (tag) `metadata` `body` (tag))
+`src/app/App.tsx` (app entry point)
+`src/app/react.svg` (favicon, can be any other image, bun path must be specify in `src/app/index.tsx`)
+`src/app/index.css` (optional, taiwindcss import automaticly)
+`.gitignore` (optional)
+`bunfig.toml` (for tailwindcss)
+`package.json` (with scripts `dev` `build`)
+`README.md` (optional)
+`tsconfig.json` (for `typescript`)

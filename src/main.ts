@@ -26,7 +26,7 @@ switch (process.argv.at(2)) {
     break
   default: {
     console.log(`wrong command: "${process.argv.at(2)}"\ntry "init" | "dev" | "build"`)
-    process.exit()
+    // process.exit()
   }
 }
 
@@ -56,8 +56,9 @@ export async function dev() {
   await createCss()
   await createHtml()
 
-  await import(`./serve.ts`)
+  await import(`./server.ts`)
 }
+
 export async function build(config = buildDef) {
   await readMetadata()
 
@@ -65,11 +66,8 @@ export async function build(config = buildDef) {
   await createCss()
   await createHtml()
 
-  const mod = import(`${process.cwd()}${appPath}/index.tsx`)
-  console.log(mod)
-
   const buildConfig: Bun.BuildConfig = {
-    entrypoints: [`.${appPath}/index.html`],
+    entrypoints: [`${libPath}/dist/index.html`],
     outdir: config.outdir,
     plugins: [plugin],
     minify: true,
@@ -116,9 +114,9 @@ export async function build(config = buildDef) {
       cssFile.delete()
       result.outputs.splice(result.outputs.indexOf(cssArtefact), 1)
     }
-
-    htmlFile.write(html)
   }
+
+  htmlFile.write(html)
 
   // Print the results
   const buildTime = (performance.now() - start).toFixed(2)
@@ -262,22 +260,8 @@ function getHtmlElement(text: string, name: string) {
 }
 
 async function readMetadata() {
-  const text = await Bun.file(`${appPath}/index.tsx`).text()
-
-  let i = text.indexOf(`export const metadata`)
-  i = text.indexOf(`{`, i) + 1
-  const j = text.indexOf(`}`, i)
-
-  const obj = text
-    .slice(i, j)
-    .replaceAll(/`|'/g, `"`)
-    .split(`,`)
-    .map((line) => line.trim())
-    .filter((line) => line)
-    .reduce((prev, line) => {
-      const [a, b] = line.split(`:`) as [string, string]
-      return { ...prev, [a]: b.slice(2, -1) }
-    }, {} as Record<string, string>)
+  const mod = await import(`../../../.${appPath}/index.tsx`)
+  const obj = mod.metadata
 
   if (obj.iconPath) obj.iconPath = `../../../.${appPath}${obj.iconPath.slice(1)}`
 
