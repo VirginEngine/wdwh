@@ -168,7 +168,6 @@ Done in ${buildTime}ms\n`)
       .replaceAll(/ } | }|} /g, `}`)
       .replaceAll(/ " | "|" /g, `"`)
       .replaceAll(/ , | ,|, /g, `,`)
-    // .replaceAll(/\/\*[\s\S]*?\*\//g, ``) // Remove comments
   }
 
   function formatPath(path: string) {
@@ -246,22 +245,6 @@ function getHtmlElement(text: string, name: string) {
 }
 
 async function readMetadata() {
-  // // Metadata
-  // const mod = await import(`../../../.${appPath}/index.tsx`)
-  // let obj = mod.metadata
-
-  // for (const key in obj) {
-  //   metadata[key] = obj[key]!
-  // }
-
-  // // Config
-
-  // obj = mod.config
-
-  // for (const key in obj) {
-  //   ;(config as any)[key] = obj[key]!
-  // }
-
   const text = await Bun.file(`${appPath}/index.tsx`).text()
 
   const conf = getOBjFromJsString(text, `export const config`) as Config
