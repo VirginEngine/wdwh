@@ -10,7 +10,7 @@ const arr = oldVersion.split(`-dev.`)
 if (arr[1]) {
   arr[1] = String(Number(arr[1]) + 1)
   const newVersion = arr.join(`-dev.`)
-  file.write(text.replaceAll(oldVersion, newVersion))
+  await file.write(text.replaceAll(oldVersion, newVersion))
 
   await Bun.$`bun run build`
   await Bun.$`bun publish --tag=dev`

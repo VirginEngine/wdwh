@@ -70,7 +70,3 @@ https://github.com/VirginEngine/wdwh/tree/main/example
 `package.json` (with scripts `dev` `build`)
 `README.md` (optional)
 `tsconfig.json` (for `typescript`)
-
-## TODO
-
-- Bundle example folder to json { path: fileText }

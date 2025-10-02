@@ -18,31 +18,23 @@ for (const filePath of glob.scanSync(`./example`)) {
 
 const example = `const example = ${JSON.stringify(files)}`
 
-for (const filePath of glob.scanSync(`./src`)) {
-  let text = await Bun.file(`./src/${filePath}`).text()
-  if (filePath.endsWith(`main.ts`)) {
-    text = text
-      .split(`\n`)
-      .map((line) => (line.includes(`const example`) ? `const example` : line))
-      .join(`\n`)
-      .replace(`const example`, example)
-  }
-  await Bun.write(`./dist/${filePath}`, optymalize(text))
-}
+const text = (await Bun.file(`./src/main.ts`).text())
+  .split(`\n`)
+  .map((line) => (line.includes(`const example`) ? `const example` : line))
+  .join(`\n`)
+  .replace(`const example`, example)
+
+await Bun.write(`./dist/main.ts`, optymalize(text))
 
 console.log(`Done.`)
 
 // Helper functions
 
 function optymalize(js: string) {
-  return (
-    js
-      // .replaceAll(/\/\*[\s\S]*?\*\/|\/\/.*/g, ``) // Remove comments
-      .replaceAll("${libPath}", `./node_modules/@virgin-engine/wdwh`)
-      .replaceAll("${appPath}", `./src/app`)
-      .split(`\n`)
-      .map((line) => line.trim())
-      .filter((line) => line && !line.includes(`libPath`) && !line.includes(`appPath`))
-      .join(`\n`)
-  )
+  return js
+    .replaceAll("${cachePath}", `./node_modules/.cache/@virgin-engine/wdwh`)
+    .split(`\n`)
+    .map((line) => line.trim())
+    .filter((line) => line && !line.includes(`cachePath`) && !line.startsWith(`//`))
+    .join(`\n`)
 }

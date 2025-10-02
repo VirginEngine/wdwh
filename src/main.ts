@@ -3,8 +3,7 @@ import plugin from "bun-plugin-tailwind"
 import { cpSync, rmSync } from "fs"
 import { relative } from "path"
 
-const libPath = `${process.env.BASE_PATH || `.`}/node_modules/@virgin-engine/wdwh`
-const appPath = `${process.env.BASE_PATH || `.`}/src/app`
+const cachePath = `./node_modules/.cache/@virgin-engine/wdwh`
 
 const config: Config = {
   outdir: `./dist`,
@@ -17,12 +16,12 @@ const metadata: Metadata = {
 }
 
 const files: Record<string, string> = {
-  [`${libPath}/dist/frontend.tsx`]: `import { createRoot } from "react-dom/client"
-import "../../../.${appPath}/index.css"
-import App from "../../../.${appPath}/App.tsx"
+  [`${cachePath}/frontend.tsx`]: `import { createRoot } from "react-dom/client"
+import "../../../../src/app/index.css"
+import App from "../../../../src/app/App.tsx"
 
 createRoot(document.getElementsByTagName("body")[0]).render(<App />)`,
-  [`${libPath}/dist/server.ts`]: `import index from "./index.html"
+  [`${cachePath}/server.ts`]: `import index from "./index.html"
 
 const server = Bun.serve({
   routes: { "/*": index },
@@ -52,15 +51,29 @@ switch (process.argv.at(2)) {
 export async function init() {
   console.log(`Init blank project...`)
 
+  if (await Bun.file(`./package.json`).exists())
+    await new Promise<void>((resolve) => {
+      console.log(`For init new project type "Y", it will overrite all ./ files`)
+      const p = process.stdin.on(`data`, (e) => {
+        if (e[0] === `Y`.charCodeAt(0)) {
+          p.destroy()
+          return resolve()
+        }
+        process.exit()
+      })
+    })
+
+  const glob = new Bun.Glob(`**/*`)
+  for (const path of glob.scanSync(`.`)) {
+    if (!path.startsWith(`node_modules`)) await Bun.file(path).delete()
+  }
+
   const example: Record<string, string> = {}
   for (const [path, text] of Object.entries(example)) {
     await Bun.write(path, text)
   }
 
-  cpSync(`${libPath}/dist/react.svg`, `${appPath}/react.svg`)
-
-  const indexFile = Bun.file(`./index.ts`)
-  if (await indexFile.exists()) await indexFile.delete()
+  cpSync(`./node_modules/@virgin-engine/wdwh/dist/react.svg`, `./src/app/react.svg`)
 }
 
 export async function dev() {
@@ -68,7 +81,8 @@ export async function dev() {
 
   await createFiles()
 
-  await import(`./server.ts`)
+  // @ts-ignore
+  await import(`../../../.cache/@virgin-engine/wdwh/server.ts`)
 }
 
 export async function build() {
@@ -77,7 +91,7 @@ export async function build() {
   await createFiles()
 
   const buildConfig: Bun.BuildConfig = {
-    entrypoints: [`${libPath}/dist/index.html`],
+    entrypoints: [`${cachePath}/index.html`],
     outdir: config.outdir,
     plugins: [plugin],
     minify: true,
@@ -184,9 +198,7 @@ async function createFiles() {
     await Bun.write(path, files[path] as any)
   }
 
-  const htmlFile = Bun.file(`${appPath}/index.tsx`)
-
-  const json = getPropsFromIndexTSX(await htmlFile.text(), `${appPath}`)
+  const { headContent, body } = await getPropsFromIndexTSX()
 
   // write html
   const { title, iconPath, ...rest } = metadata
@@ -197,20 +209,22 @@ async function createFiles() {
     `<head>`,
     `<meta charset="UTF-8" />`,
     `<meta name="viewport" content="width=device-width, initial-scale=1.0" />`,
-    json.headContent,
+    headContent,
     Object.keys(rest).map((key) => `<meta name="${key}" content="${rest[key]}" />`),
     `<link rel="icon" href="${iconPath}" />`,
     `<title>${title}</title>`,
     `<script src="./frontend.tsx"></script>`,
     `</head>`,
-    json.body,
+    body,
     `</html>`,
   ]
 
-  await Bun.write(`${libPath}/dist/index.html`, buf.join(`\n`))
+  await Bun.write(`${cachePath}/index.html`, buf.join(`\n`))
 }
 
-function getPropsFromIndexTSX(text: string, path: string) {
+async function getPropsFromIndexTSX() {
+  const text = await Bun.file(`./src/app/index.tsx`).text()
+
   const headContent = getHtmlElement(text, `head`).slice(6, -7)
   let body = getHtmlElement(text, `body`).replaceAll(`className`, `class`)
 
@@ -218,14 +232,7 @@ function getPropsFromIndexTSX(text: string, path: string) {
   const bodyEnd = body.lastIndexOf(`<`)
   body = body.replace(body.slice(bodyStart, bodyEnd), ``)
 
-  let importPath = text.split(`\n`).at(0)!
-
-  const importStart = importPath.indexOf(`"`) + 2
-  const importEnd = importPath.lastIndexOf(`"`)
-  importPath = importPath.slice(importStart, importEnd)
-
   return {
-    importPath: `${path}${importPath}`,
     headContent,
     body,
   }
@@ -245,12 +252,13 @@ function getHtmlElement(text: string, name: string) {
 }
 
 async function readMetadata() {
-  const text = await Bun.file(`${appPath}/index.tsx`).text()
+  const text = await Bun.file(`./src/app/index.tsx`).text()
 
   const conf = getOBjFromJsString(text, `export const config`) as Config
 
   const meta = getOBjFromJsString(text, `export const metadata`)
-  if (meta.iconPath) meta.iconPath = `../../../.${appPath}${meta.iconPath.slice(1)}`
+  if (meta.iconPath && meta.iconPath[0] === `.`)
+    meta.iconPath = `../../../../src/app${meta.iconPath.slice(1)}`
 
   Object.assign(config, conf)
   Object.assign(metadata, meta)
