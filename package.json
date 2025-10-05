@@ -1,7 +1,7 @@
 {
   "name": "@virgin-engine/wdwh",
   "author": "VirginEngine",
-  "version": "1.4.1-dev.-1",
+  "version": "1.4.2-dev.-1",
   "repository": "https://github.com/VirginEngine/wdwh.git",
   "description": "Easyer web dev without html and reduced css",
   "keywords": [
@@ -18,7 +18,8 @@
   "files": [
     "LICENSE",
     "README.md",
-    "dist"
+    "dist",
+    "index.d.ts"
   ],
   "scripts": {
     "build": "bun build.ts",

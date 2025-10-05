@@ -1,3 +1,5 @@
+/// <reference path="../../node_modules/@virgin-engine/wdwh/index.d.ts" />
+
 import App from "./App.tsx"
 
 export const config: Config = {
@@ -19,21 +21,4 @@ export default function Page() {
       </body>
     </html>
   )
-}
-
-// Types
-
-type Config = {
-  outdir: string
-  bundleCss: boolean
-}
-
-type Metadata = {
-  iconPath: string
-  title: string
-  description?: string
-  author?: string
-  keywords?: string
-  themeColor?: string
-  [name: string]: string | undefined
 }
