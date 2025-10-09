@@ -5,7 +5,7 @@
     "build": "wdwh build"
   },
   "dependencies": {
-    "@virgin-engine/wdwh": "latest"
+    "wdwh": "latest"
   },
   "devDependencies": {
     "@types/react": "latest",

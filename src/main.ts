@@ -3,7 +3,7 @@ import plugin from "bun-plugin-tailwind"
 import { cpSync, rmSync } from "fs"
 import { relative } from "path"
 
-const cachePath = `./node_modules/.cache/@virgin-engine/wdwh`
+const cachePath = `./node_modules/.cache/wdwh`
 
 const config: Config = {
   outdir: `./dist`,
@@ -17,8 +17,8 @@ const metadata: Metadata = {
 
 const files: Record<string, string> = {
   [`${cachePath}/frontend.tsx`]: `import { createRoot } from "react-dom/client"
-import "../../../../src/app/index.css"
-import App from "../../../../src/app/App.tsx"
+import "../../../src/app/index.css"
+import App from "../../../src/app/App.tsx"
 
 createRoot(document.getElementsByTagName("body")[0]).render(<App />)`,
   [`${cachePath}/server.ts`]: `import index from "./index.html"
@@ -73,7 +73,7 @@ export async function init() {
     await Bun.write(path, text)
   }
 
-  cpSync(`./node_modules/@virgin-engine/wdwh/dist/react.svg`, `./src/app/react.svg`)
+  cpSync(`./node_modules/wdwh/dist/react.svg`, `./src/app/react.svg`)
 }
 
 export async function dev() {
@@ -82,7 +82,7 @@ export async function dev() {
   await createFiles()
 
   // @ts-ignore
-  await import(`../../../.cache/@virgin-engine/wdwh/server.ts`)
+  await import(`../../.cache/wdwh/server.ts`)
 }
 
 export async function build() {
@@ -257,8 +257,7 @@ async function readMetadata() {
   const conf = getOBjFromJsString(text, `export const config`) as Config
 
   const meta = getOBjFromJsString(text, `export const metadata`)
-  if (meta.iconPath && meta.iconPath[0] === `.`)
-    meta.iconPath = `../../../../src/app${meta.iconPath.slice(1)}`
+  if (meta.iconPath && meta.iconPath[0] === `.`) meta.iconPath = `../../../src/app${meta.iconPath.slice(1)}`
 
   Object.assign(config, conf)
   Object.assign(metadata, meta)

@@ -1,4 +1,4 @@
-# WDWH (Easyer web dev without html and reduced css)
+# WDWH (Easyer web dev without html)
 
 Works only with Bun runtime
 
