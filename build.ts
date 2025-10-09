@@ -32,7 +32,7 @@ console.log(`Done.`)
 
 function optymalize(js: string) {
   return js
-    .replaceAll("${cachePath}", `./node_modules/.cache/@virgin-engine/wdwh`)
+    .replaceAll("${cachePath}", `./node_modules/.cache/wdwh`)
     .split(`\n`)
     .map((line) => line.trim())
     .filter((line) => line && !line.includes(`cachePath`) && !line.startsWith(`//`))

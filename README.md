@@ -10,10 +10,10 @@ Works only with Bun runtime
 bun init
 ```
 
-### 2. Install `@virgin-engine/wdwh`
+### 2. Install `wdwh`
 
 ```sh
-bun i @virgin-engine/wdwh
+bun i wdwh
 ```
 
 ### 3. Add script init to `package.json`
@@ -36,10 +36,10 @@ bun run init
 
 ## Adding to project
 
-### 1. Install `@virgin-engine/wdwh`
+### 1. Install `wdwh`
 
 ```sh
-bun i @virgin-engine/wdwh
+bun i wdwh
 ```
 
 ### 2. Add script `dev` `build` to `package.json`
@@ -59,7 +59,7 @@ bun i @virgin-engine/wdwh
 
 create file structure like example
 
-https://github.com/VirginEngine/wdwh/tree/main/example
+https://github.com/kubashh/wdwh/tree/main/example
 
 - `src/app/index.tsx` (contains only `html` `head` `body` tags and `metadata`)
 - `src/app/App.tsx` (app entry point)
