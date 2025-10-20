@@ -1,19 +1,12 @@
 #!/usr/bin/env bun
+
+/// <reference path="../index.d.ts" />
+
 import plugin from "bun-plugin-tailwind"
-import { cpSync, rmSync } from "fs"
+import { rmSync } from "fs"
 import { relative } from "path"
 
 const cachePath = `./node_modules/.cache/wdwh`
-
-const config: Config = {
-  outdir: `./dist`,
-  bundleCss: true,
-}
-
-const metadata: Metadata = {
-  iconPath: `./react.svg`,
-  title: `Example`,
-}
 
 const files: Record<string, string> = {
   [`${cachePath}/frontend.tsx`]: `import { createRoot } from "react-dom/client"
@@ -33,9 +26,6 @@ console.log(\`> Server running at \${server.url}\`)
 }
 
 switch (process.argv.at(2)) {
-  case `init`:
-    await init()
-    break
   case `dev`:
     await dev()
     break
@@ -43,42 +33,12 @@ switch (process.argv.at(2)) {
     await build()
     break
   default: {
-    console.log(`wrong command: "${process.argv.at(2)}"\ntry "init" | "dev" | "build"`)
+    console.log(`wrong command: "${process.argv.at(2)}"\ntry "dev" | "build"`)
     process.exit()
   }
 }
 
-export async function init() {
-  console.log(`Init blank project...`)
-
-  if (await Bun.file(`./package.json`).exists())
-    await new Promise<void>((resolve) => {
-      console.log(`For init new project type "Y", it will overrite all ./ files`)
-      const p = process.stdin.on(`data`, (e) => {
-        if (e[0] === `Y`.charCodeAt(0)) {
-          p.destroy()
-          return resolve()
-        }
-        process.exit()
-      })
-    })
-
-  const glob = new Bun.Glob(`**/*`)
-  for (const path of glob.scanSync(`.`)) {
-    if (!path.startsWith(`node_modules`)) await Bun.file(path).delete()
-  }
-
-  const example: Record<string, string> = {}
-  for (const [path, text] of Object.entries(example)) {
-    await Bun.write(path, text)
-  }
-
-  cpSync(`./node_modules/wdwh/dist/react.svg`, `./src/app/react.svg`)
-}
-
 export async function dev() {
-  await readMetadata()
-
   await createFiles()
 
   // @ts-ignore
@@ -86,7 +46,7 @@ export async function dev() {
 }
 
 export async function build() {
-  await readMetadata()
+  const { config } = await readMetadata()
 
   await createFiles()
 
@@ -194,6 +154,8 @@ Done in ${buildTime}ms\n`)
 }
 
 async function createFiles() {
+  const { metadata } = await readMetadata()
+
   for (const path in files) {
     await Bun.write(path, files[path] as any)
   }
@@ -254,18 +216,17 @@ function getHtmlElement(text: string, name: string) {
 async function readMetadata() {
   const text = await Bun.file(`./src/app/index.tsx`).text()
 
-  const conf = getOBjFromJsString(text, `export const config`) as Config
+  const config = getOBjFromJsString(text, `export const config`) as Config
 
-  const meta = getOBjFromJsString(text, `export const metadata`)
-  if (meta.iconPath && meta.iconPath[0] === `.`) meta.iconPath = `../../../src/app${meta.iconPath.slice(1)}`
+  const metadata = getOBjFromJsString(text, `export const metadata`) as Metadata
+  if (metadata.iconPath && metadata.iconPath[0] === `.`)
+    metadata.iconPath = `../../../src/app${metadata.iconPath.slice(1)}`
 
-  Object.assign(config, conf)
-  Object.assign(metadata, meta)
+  return { config, metadata }
 }
 
 function getOBjFromJsString(text: string, id: string) {
-  let i = text.indexOf(id)
-  i = text.indexOf(`{`, i) + 1
+  const i = text.indexOf(`{`, text.indexOf(id)) + 1
   const j = text.indexOf(`}`, i)
 
   return text
@@ -284,22 +245,5 @@ function getOBjFromJsString(text: string, id: string) {
       else if (b === `true`) b = true
 
       return { ...prev, [a]: b }
-    }, {} as Record<string, any>)
-}
-
-// Types
-
-type Config = {
-  outdir: string
-  bundleCss: boolean
-}
-
-type Metadata = {
-  iconPath: string
-  title: string
-  description?: string
-  author?: string
-  keywords?: string
-  themeColor?: string
-  [name: string]: string | undefined
+    }, {})
 }

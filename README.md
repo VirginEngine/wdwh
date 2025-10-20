@@ -4,34 +4,8 @@ Works only with Bun runtime
 
 ## Init new project
 
-### 1. Init blank bun
-
 ```sh
-bun init
-```
-
-### 2. Install `wdwh`
-
-```sh
-bun i wdwh
-```
-
-### 3. Add script init to `package.json`
-
-```json
-{
-  "private": true,
-  "scripts": {
-    "init": "wdwh init"
-  }
-  // ...
-}
-```
-
-### 4. Run init
-
-```sh
-bun run init
+bun create wdwh-app@latest .
 ```
 
 ## Adding to project

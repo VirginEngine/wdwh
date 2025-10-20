@@ -12,9 +12,7 @@ if (arr[1]) {
   const newVersion = arr.join(`-dev.`)
   await file.write(text.replaceAll(oldVersion, newVersion))
 
-  await Bun.$`bun run build`
   await Bun.$`bun publish --tag=dev`
 } else {
-  await Bun.$`bun run build`
   await Bun.$`bun publish`
 }
